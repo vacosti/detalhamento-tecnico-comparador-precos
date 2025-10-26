@@ -1,15 +1,15 @@
 # Aplicação web para busca e comparação de preços de produtos
 ## Introdução
 
-Aplicação web _full-stack_ que permite buscar e comparar preços entre produtos de múltiplos supermercados, utilizando recursos de `full-text search` e `autocomplete`. A aplicação capacita os usuários a identificarem as melhores ofertas, otimizarem suas compras semanais e, para usuários cadastrados, salvar listas de compras. O projeto foi desenvolvido utilizando *Clean Architecture* e *SOLID*.
+Aplicação web _full-stack_ para busca e comparação de preços de produtos de supermercados, utilizando `full-text search` e `autocomplete` para otimizar a experiência do usuário, o qual pode ainda salvar listas de compras uma vez autenticado. Dados de produtos atualizados via serviço assíncrono de _web-crawling_ e _ETL_ automatizado. Implementação com base em _Clean Architecture_ e princípios _SOLID_ para uma estrutura escalável e manutenível.
 
 ## Funcionalidades e mapeamento para requisitos técnicos
 
 - Busca de produtos e comparação de preços de produtos entre diferentes supermercados:
   - `elasticsearch` para `full-text search` e `autocomplete` iniciais (retornando `ids` dos produtos) e `PostgreSQL` para agregar demais dados de produtos com base nos `ids` resultantes da busca no `elasticsearch`.
   - `PostgreSQL`: desenho relacional para otimizar a busca de determinado produto com respectivos preços em diferentes supermercados.
-  - Para busca de produtos, não havia necessidade de _cadastro/login_, o que tinha o objetivo de diminuir o atrito. Dessa forma, utilizou-se `reCAPTCHA v3` (com *fallback* para `v2`) para proteção contra bots.
-  - _Web-crawling_ automatizado utilizando `Selenium`, `regex` e `Celery` para coleta, transformação e atualização de dados de produtos de diferentes supermercados.
+  - Para busca de produtos, não havia necessidade de autenticação via _cadastro/login_, o que tinha o objetivo de diminuir o atrito. Dessa forma, utilizou-se `reCAPTCHA v3` (com *fallback* para `v2`) para proteção de rotas não autenticadas contra bots.
+  - _Web-crawler_ e _pipeline_ de _ETL_: serviço assíncrono em `Python` com `Celery` para coleta (_web-crawling_ com `Selenium`), transformação (várias camadas para normalização utilizando `regex` com base documentos com palavras-chave de marcas, quantificadores, etc.) e ingestão/atualização automatizada de dados de produtos de diferentes supermercados nos bancos de dados (`PostgreSQL`, `elasticsearch`) e no `AWS S3` (imagens).
  
 - Cadastro e login tradicional e via Google:
   - cadastro tradicional (utilizando `hashing` e `salting` para armazenamento das senhas) e via Google (utilizando `OAuth 2.0` e `OIDC`).
@@ -30,37 +30,39 @@ Aplicação web _full-stack_ que permite buscar e comparar preços entre produto
   - `Amazon S3`: Armazenamento de imagens de produtos.
     
 - **Frontend**:
-  - `React.js` como framework principal.
+  - `Javascript` com `React.js` como framework principal.
   - `Bootstrap` como framework `CSS`.
-  - `AJAX`: Consumo das _APIs_ do backend (`JSON`).
+  - `AJAX`: Consumo das _REST_ _APIs_ do backend (`JSON`).
+ 
+- **Segurança**:
+  - `JWT`: Autenticação para rotas protegidas.
+  - `reCAPTCHA v3` (com *fallback* para `v2`): Proteção contra bots em rotas não autenticadas.
     
 - **Testes**:
   - `pytest`: Testes unitários e de integração no backend.
   - `Jest` + `React Testing Library`: Testes unitários e de integração no frontend.
+
+- **Observabilidade e monitoramento**:
+  - `pytest`: Testes unitários e de integração no backend.
     
 - **Infraestrutura**:
   - `Nginx`: Servidor web.
-  - `VPS (Ubuntu)`: Hospedagem da aplicação `Flask`, serviço de _web-crawling_, servidor do banco de dados `PostgreSQL` e servidor `elasticsearch`.
-    
-- **Segurança**:
-  - `JWT`: Autenticação para rotas protegidas.
-  - `reCAPTCHA v3` (com *fallback* para `v2`): Proteção contra bots.
-  - Sanitização de dados para evitar ataques `XSS`.
+  - `VPS (Ubuntu)`: Hospedagem da aplicação `Flask`, do serviço de _web-crawling_, do servidor do banco de dados `PostgreSQL` e do servidor `elasticsearch`.
+  - `AWS S3`: hospedagem de imagens dos produtos.
     
 - **Documentação**:
   - `OpenAPI (Swagger)`: Documentação da _REST_ _API_.
 
-## Arquitetura
+## Arquitetura (_Clean Architecture_)
+Camadas: _UI_ (`React.js`), _Web-Framework_ (`Flask`), _Adapters_ (_Controllers/Presenters_), _Use Cases_ dependendo apenas das interfaces _Entities_ e das interfaces `I*Repository`, _Entities_, _Repositories_ com _dependency inversion_ implementando a interação com o banco de dados relacional via `SQLAlchemy` (_ORM_) e com o servidor `elasticsearch` e finalmente camada de persistência híbrida (relacional em `PostgreSQL` + `NoSQL` (documental) para _search engine_ eficiente (`elasticsearch`)).
 
 ### Backend
-**_REST APIs_** seguindo *Clean Architecture* e *SOLID*, com divisão clara de camadas e _dependency inversion_:
-
-- `Flask` na camada mais externa (**web framework**), recebendo os respectivos `requests` de cada rota e enviando os mesmos aos respectivos _Controllers_, e gerando as respostas HTTP (serializando os `Data Transfer Objects` (`DTOs`) de resposta, vindas do _Presenter_, para `JSON`) 
+- `Flask` recebendo os respectivos `requests` de cada rota e enviando os mesmos aos respectivos _Controllers_, e gerando as respostas HTTP (serializando os `Data Transfer Objects` (`DTOs`) de resposta, vindas do _Presenter_, para `JSON`).
 - **Controllers e Presenters (Adapters)**: Convertem `requests` processados por cada rota do `Flask` em `DTOs` de entrada e convertem `Entities` retornadas dos _use cases_ em `DTOs` de saída.
 - **Use Cases**: Implementam a lógica de negócio, criando `Entities` (_domain core_) a partir dos `DTOs` de entrada e invocando os métodos dos respectivos repositórios que implementam as interfaces `I*Repository`.
 - **Entities (_domain core_)**: camada central que define as entidades de negócio: ex.: `class Product`.
 - **Repositories**: implementam as interfaces `I*Repository` utilizando tanto `SQLAlchemy` (_ORM_) para interação com os dados modelados de forma relacional em `PostgreSQL` quanto as _APIs_ da biblioteca `elasticsearch`, `client` oficial da _Elastic_ para `Python`, para os _cases_ de `autocomplete` e `full-text-search`. 
-- **persitência de dados (camada mais externa)**: `PostgreSQL`, `Elasticsearch`, `Amazon S3`;
+- **persitência de dados (camada mais externa)**: `PostgreSQL`, `Elasticsearch` e `Amazon S3`;
 
 ### Frontend
 ***Single Page Application*** (_SPA_) implementada em `React.js` com _Client Side Rendering_ (_CSR_), utilizando `AJAX` (`fetch`) para consumir _APIs_ do _backend_ e atualizar o `DOM`. Não houve necessidade de utilizar uma biblioteca à parte para gerenciamento de estados, como `redux`. `Bootstrap` como _framework_ `CSS`. 
