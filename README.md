@@ -54,7 +54,7 @@ Aplicação web _full-stack_ para busca e comparação de preços de produtos de
   - `OpenAPI (Swagger)`: Documentação da _REST_ _API_.
 
 ## Arquitetura (_Clean Architecture_)
-Camadas: _UI_ (`React.js`), _Web-Framework_ (`Flask`), _Adapters_ (_Controllers/Presenters_), _Use Cases_ dependendo apenas das interfaces _Entities_ e das interfaces `I*Repository`, _Entities_, _Repositories_ com _dependency inversion_ implementando a interação com o banco de dados relacional via `SQLAlchemy` (_ORM_) e com o servidor `elasticsearch` e finalmente camada de persistência híbrida (relacional em `PostgreSQL` + `NoSQL` (documental) para _search engine_ eficiente (`elasticsearch`)).
+Camadas: _UI_ (`React.js`), _Web-Framework_ (`Flask`), _Adapters_ (_Controllers/Presenters_), _Use Cases_ dependendo apenas das _Entities_ e das interfaces `I*Repository`, _Entities_, _Repositories_ com _dependency inversion_ implementando a interação com o banco de dados relacional via `SQLAlchemy` (_ORM_) e com o servidor `elasticsearch` e finalmente camada de persistência híbrida (relacional em `PostgreSQL` + `NoSQL` (documental) para _search engine_ eficiente (`elasticsearch`)).
 
 ### Backend
 - `Flask` recebendo os respectivos `requests` de cada rota e enviando os mesmos aos respectivos _Controllers_, e gerando as respostas HTTP (serializando os `Data Transfer Objects` (`DTOs`) de resposta, vindas do _Presenter_, para `JSON`).
@@ -72,7 +72,7 @@ Serviço automatizado de **_web-crawling_** utilizando `Selenium` e `Celery` (`P
 
 ### Testes
 - _backend_: testes unitários e de integração utilizando `pytest`.
-- _frontend_:unitários e de integração utilizando `Jest` + `RTL`.
+- _frontend_: testes unitários e de integração utilizando `Jest` + `RTL`.
 
 ### DevOps
 - `Git` e `Github` para controle de versionamento de código.
