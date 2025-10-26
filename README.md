@@ -55,15 +55,15 @@ Aplicação web _full-stack_ que permite buscar e comparar preços entre produto
 ### Backend
 **_REST APIs_** seguindo *Clean Architecture* e *SOLID*, com divisão clara de camadas e _dependency inversion_:
 
-- `Flask` na camada mais externa (**web framework**), processando e respondendo (com `JSON`) aos respectivos `requests` de cada rota.
-- **Controllers (Adapters)**: Convertem `requests` processados por cada rota do `Flask` em `Data Transfer Objects` (`DTOs`).
-- **Use Cases**: Implementam a lógica de negócio, criando `Entities` (_domain core_) a partir dos `DTOs` e invocando os métodos dos respectivos repositórios que implementam as interfaces `I*Repository`.
+- `Flask` na camada mais externa (**web framework**), recebendo os respectivos `requests` de cada rota e enviando os mesmos aos respectivos _Controllers_, e gerando as respostas HTTP (serializando os `Data Transfer Objects` (`DTOs`) de resposta, vindas do _Presenter_, para `JSON`) 
+- **Controllers e Presenters (Adapters)**: Convertem `requests` processados por cada rota do `Flask` em `DTOs` de entrada e convertem `Entities` retornadas dos _use cases_ em `DTOs` de saída.
+- **Use Cases**: Implementam a lógica de negócio, criando `Entities` (_domain core_) a partir dos `DTOs` de entrada e invocando os métodos dos respectivos repositórios que implementam as interfaces `I*Repository`.
 - **Entities (_domain core_)**: camada central que define as entidades de negócio: ex.: `class Product`.
 - **Repositories**: implementam as interfaces `I*Repository` utilizando tanto `SQLAlchemy` (_ORM_) para interação com os dados modelados de forma relacional em `PostgreSQL` quanto as _APIs_ da biblioteca `elasticsearch`, `client` oficial da _Elastic_ para `Python`, para os _cases_ de `autocomplete` e `full-text-search`. 
 - **persitência de dados (camada mais externa)**: `PostgreSQL`, `Elasticsearch`, `Amazon S3`;
 
 ### Frontend
-***Single Page Application*** (_SPA_) implementada em `React.js` com _Client Side Rendering_(_CSR_), utilizando `AJAX` (`fetch`) para consumir _APIs_ do _backend_ e atualizar o `DOM`. Não houve necessidade de utilizar uma biblioteca à parte para gerenciamento de estados, como `redux`. `Bootstrap` como _framework_ `CSS`. 
+***Single Page Application*** (_SPA_) implementada em `React.js` com _Client Side Rendering_ (_CSR_), utilizando `AJAX` (`fetch`) para consumir _APIs_ do _backend_ e atualizar o `DOM`. Não houve necessidade de utilizar uma biblioteca à parte para gerenciamento de estados, como `redux`. `Bootstrap` como _framework_ `CSS`. 
 
 ### _Web-Crawling_
 Serviço automatizado de **_web-crawling_** utilizando `Selenium` e `Celery` (`Python`) para aquisição, normalização, deduplicação, categorização e atualização de dados de produtos, tanto na base de dados  `PostgreSQL` via `SQLAlchemy` quanto no `Elasticsearch`. Todo o pipeline de normalização, deduplicação e categorização usa apenas `regex`. Embora os `regex` utilizados em cada etapa permitissem um número grande de variações de palavras-chave, é um algoritmo completamente determinístico e, por isso, tem relativa fragilidade.
